@@ -1,24 +1,13 @@
-import os
-from dotenv import load_dotenv
 import nltk
 from nltk.tokenize import sent_tokenize
 from datetime import datetime
 
-start_time = datetime.now()
-
-
 from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
-from openai import OpenAI
 
 nltk.download('punkt')
 nltk.download('punkt_tab')
 
-load_dotenv()
-
-client = OpenAI(api_key=os.getenv('OPEN_AI_KEY'))
-
 ner = pipeline("token-classification", model="JonyC/scibert-NER-finetuned-improved")
-
 
 #************************* PART 2 *******************************
 def concat_terms(li):
@@ -107,32 +96,7 @@ def summarize_text(sentences, chunk_limit=250):
     summaries = [summarizer(chunk, max_length=130, min_length=30, do_sample=False)[0]["summary_text"] for chunk in chunks]
     return summaries
 
-def simplify_definitions(terms_by_sentence, category, text):
-    all_terms = set()
-    all_defs = []
 
-    for sentence, terms in terms_by_sentence:
-        for t in terms:
-            term = sentence[t['start']:t['end']]
-            all_terms.add(term)
-
-    for term in all_terms:
-        prompt = f"Define the term '{term}' based on the sentence: \"{text}\" in the context of {category}. the definition should be short, no more then 20 words and without bloat"
-
-        try:
-            response = client.chat.completions.create(
-                model='gpt-4',
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                max_tokens=100,
-            )
-            definition = response.choices[0].message.content.strip()
-        except Exception as e:
-            definition = f"(error generating definition: {e})"
-
-        all_defs.append((term, definition))
-
-    return all_defs
 
 def clean_text(text):
     return " ".join(text.strip().split())
@@ -145,19 +109,11 @@ def simplify_scientific_article(article_text):
     simplified_sentences = simplify_sentences(sentences)
     summaries = summarize_text(simplified_sentences)
 
-    # found_terms = [(sent, find_terms(sent)) for sent in simplified_sentences]
-    # definitions = simplify_definitions(found_terms, category, article_text)
-
     return {
         "simplified_text": " ".join(simplified_sentences),
         "summary": " ".join(summaries),
-        # "definitions": definitions
     }
 
 text = 'With a new design, the bug-sized bot was able to fly 100 times longer than prior versions. With a more efficient method for artificial pollination, farmers in the future could grow fruits and vegetables inside multilevel warehouses, boosting yields while mitigating some of agriculture’s harmful impacts on the environment. To help make this idea a reality, MIT researchers are developing robotic insects that could someday swarm out of mechanical hives to rapidly perform precise pollination. However, even the best bug-sized robots are no match for natural pollinators like bees when it comes to endurance, speed, and maneuverability. Now, inspired by the anatomy of these natural pollinators, the researchers have overhauled their design to produce tiny, aerial robots that are far more agile and durable than prior versions. The new bots can hover for about 1,000 seconds, which is more than 100 times longer than previously demonstrated. The robotic insect, which weighs less than a paperclip, can fly significantly faster than similar bots while completing acrobatic maneuvers like double aerial flips. The revamped robot is designed to boost flight precision and agility while minimizing the mechanical stress on its artificial wing flexures, which enables faster maneuvers, increased endurance, and a longer lifespan. The new design also has enough free space that the robot could carry tiny batteries or sensors, which could enable it to fly on its own outside the lab. “The amount of flight we demonstrated in this paper is probably longer than the entire amount of flight our field has been able to accumulate with these robotic insects. With the improved lifespan and precision of this robot, we are getting closer to some very exciting applications, like assisted pollination,” says Kevin Chen, an associate professor in the Department of Electrical Engineering and Computer Science (EECS), head of the Soft and Micro Robotics Laboratory within the Research Laboratory of Electronics (RLE), and the senior author of an open-access paper on the new design. Chen is joined on the paper by co-lead authors Suhan Kim and Yi-Hsuan Hsiao, who are EECS graduate students; as well as EECS graduate student Zhijian Ren and summer visiting student Jiashu Huang. The research appears today in Science Robotics.'
 
 res = simplify_scientific_article(text)
-end_time = datetime.now()
-print(res)
-
-print(f"Duration: {end_time - start_time}")
