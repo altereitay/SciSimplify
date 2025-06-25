@@ -16,8 +16,21 @@ def simplify_definitions(terms_by_sentence, category, text):
             term = sentence[t['start']:t['end']]
             all_terms.add(term)
 
+    context = f"I will give you terms to simplifiy based on the text: \"{text}\" in the context of {category}. the definitions should be short, no more then 20 words and without bloat"
+
+    try:
+        response = client.chat.completions.create(
+            model='gpt-4',
+            messages=[{"role": "system", "content": context}],
+            temperature=0.3,
+            max_tokens=100,
+        )
+        definition = response.choices[0].message.content.strip()
+    except Exception as e:
+        definition = f"(error generating definition: {e})"
+
     for term in all_terms:
-        prompt = f"Define the term '{term}' based on the sentence: \"{text}\" in the context of {category}. the definition should be short, no more then 20 words and without bloat"
+        prompt = f"Define the term '{term}'"
 
         try:
             response = client.chat.completions.create(
