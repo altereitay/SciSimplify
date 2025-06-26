@@ -3,18 +3,20 @@ from dotenv import load_dotenv
 
 from openai import OpenAI
 
+import json
+import paho.mqtt.client as mqtt
+client = mqtt.Client() # Create MQTT client instance
+TOPIC_GO = "articles/simplified"
+TOPIC_TERMS = "articles/terms"
+
 load_dotenv()
 
 client = OpenAI(api_key=os.getenv('OPEN_AI_KEY'))
 
-def simplify_definitions(terms_by_sentence, category, text):
-    all_terms = set()
+def simplify_definitions(terms, category, text):
+    all_terms = set(terms)
     all_defs = []
 
-    for sentence, terms in terms_by_sentence:
-        for t in terms:
-            term = sentence[t['start']:t['end']]
-            all_terms.add(term)
 
     context = f"I will give you terms to simplifiy based on the text: \"{text}\" in the context of {category}. the definitions should be short, no more then 20 words and without bloat"
 
@@ -46,3 +48,60 @@ def simplify_definitions(terms_by_sentence, category, text):
         all_defs.append((term, definition))
 
     return all_defs
+
+def load_file_text(file_path):
+    with open(file_path, "r") as file:
+            article_text = file.read()
+    return article_text
+
+def save_simplified_text(file_path, simplified_text):
+    with open(file_path, "w") as file:
+        file.write(simplified_text)
+
+# Callback when the client connects to the broker
+def on_connect(client, userdata, flags, rc):
+    print("Connected with result code " + str(rc))
+    client.subscribe(TOPIC_TERMS)
+
+# Callback when a PUBLISH message is received from the server
+def on_message(client, userdata, msg):
+    try:
+        payload = json.loads(msg.payload.decode())
+        status = payload.get("status")
+        if status == "new":    
+            file_name = payload.get("name") # file_name => full path to the file
+            terms = payload.get("terms")
+            catergory = payload.get("catergory")
+            print(f"Received terms from topic '{msg.topic}':\nin category {catergory} \nwith terms {terms}")
+
+            print("Done generating definitions... ")
+
+            client.publish(TOPIC_TERMS, payload=json.dumps({
+                'hash': payload.get("hash"),
+                'name': res_path,
+                "terms" : simplfied_obj["terms"], # terms is list
+                "catergory" : simplfied_obj["catergory"],
+                }),
+                retain=True,
+                qos=1)
+
+    except json.JSONDecodeError as e:
+        print(f"Invalid JSON received: {e}")
+    except FileNotFoundError:
+        print(f"File '{file_name}' not found.")
+    except Exception as e:
+        print(f"Error handling message: {e}")
+
+
+
+
+# Attach callbacks
+client.on_connect = on_connect
+client.on_message = on_message
+
+# Connect to broker
+client.connect("localhost", 1883, 60)
+
+
+# Start the loop to process network traffic and dispatch callbacks
+client.loop_forever()
