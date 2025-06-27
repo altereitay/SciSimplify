@@ -69,18 +69,21 @@ def on_message(client, userdata, msg):
         payload = json.loads(msg.payload.decode())
         status = payload.get("status")
         if status == "new":    
-            file_name = payload.get("name") # file_name => full path to the file
+            file_path = payload.get("name") # file_path => full path to the result file
+            text = load_file_text(file_path)
             terms = payload.get("terms")
-            catergory = payload.get("catergory")
-            print(f"Received terms from topic '{msg.topic}':\nin category {catergory} \nwith terms {terms}")
-
+            category = payload.get("category")
+            print(f"Received terms from topic '{msg.topic}':\nin category {category} \nwith terms {terms}")
+            defs = simplify_definitions(terms, category, text)
             print("Done generating definitions... ")
 
             client.publish(TOPIC_TERMS, payload=json.dumps({
                 'hash': payload.get("hash"),
-                'name': res_path,
-                "terms" : simplfied_obj["terms"], # terms is list
-                "catergory" : simplfied_obj["catergory"],
+                'name': file_path,
+                "terms" : terms, # terms is list
+                "catergory" : category,
+                "status" : "done",
+                "definitions" : defs,
                 }),
                 retain=True,
                 qos=1)
@@ -88,7 +91,7 @@ def on_message(client, userdata, msg):
     except json.JSONDecodeError as e:
         print(f"Invalid JSON received: {e}")
     except FileNotFoundError:
-        print(f"File '{file_name}' not found.")
+        print(f"File '{file_path}' not found.")
     except Exception as e:
         print(f"Error handling message: {e}")
 

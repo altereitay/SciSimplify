@@ -126,7 +126,7 @@ def simplify_scientific_article(article_text):
     return {
         "simplified_text": " ".join(simplified_sentences),
         "terms" : terms,
-        "catergory" : category,
+        "category" : category,
     }
 
 # text = 'With a new design, the bug-sized bot was able to fly 100 times longer than prior versions. With a more efficient method for artificial pollination, farmers in the future could grow fruits and vegetables inside multilevel warehouses, boosting yields while mitigating some of agriculture’s harmful impacts on the environment. To help make this idea a reality, MIT researchers are developing robotic insects that could someday swarm out of mechanical hives to rapidly perform precise pollination. However, even the best bug-sized robots are no match for natural pollinators like bees when it comes to endurance, speed, and maneuverability. Now, inspired by the anatomy of these natural pollinators, the researchers have overhauled their design to produce tiny, aerial robots that are far more agile and durable than prior versions. The new bots can hover for about 1,000 seconds, which is more than 100 times longer than previously demonstrated. The robotic insect, which weighs less than a paperclip, can fly significantly faster than similar bots while completing acrobatic maneuvers like double aerial flips. The revamped robot is designed to boost flight precision and agility while minimizing the mechanical stress on its artificial wing flexures, which enables faster maneuvers, increased endurance, and a longer lifespan. The new design also has enough free space that the robot could carry tiny batteries or sensors, which could enable it to fly on its own outside the lab. “The amount of flight we demonstrated in this paper is probably longer than the entire amount of flight our field has been able to accumulate with these robotic insects. With the improved lifespan and precision of this robot, we are getting closer to some very exciting applications, like assisted pollination,” says Kevin Chen, an associate professor in the Department of Electrical Engineering and Computer Science (EECS), head of the Soft and Micro Robotics Laboratory within the Research Laboratory of Electronics (RLE), and the senior author of an open-access paper on the new design. Chen is joined on the paper by co-lead authors Suhan Kim and Yi-Hsuan Hsiao, who are EECS graduate students; as well as EECS graduate student Zhijian Ren and summer visiting student Jiashu Huang. The research appears today in Science Robotics.'
@@ -151,10 +151,10 @@ def on_message(client, userdata, msg):
         payload = json.loads(msg.payload.decode())
         status = payload.get("status")
         if status == "new":    
-            file_name = payload.get("name") # file_name => full path to the file
-            article_text = load_file_text(file_name)
+            file_path = payload.get("name") # file_path => full path to the file
+            article_text = load_file_text(file_path)
 
-            res_path = file_name.replace("-original","-simplified")
+            res_path = file_path.replace("-original","-simplified")
             print(res_path)
             simplfied_obj = simplify_scientific_article(article_text)
             print(simplfied_obj)
@@ -173,7 +173,7 @@ def on_message(client, userdata, msg):
                 'hash': payload.get("hash"),
                 'name': res_path,
                 "terms" : simplfied_obj["terms"], # terms is list
-                "catergory" : simplfied_obj["catergory"],
+                "category" : simplfied_obj["category"],
                 "status" : "new"
             }),
             retain=True,
@@ -182,7 +182,7 @@ def on_message(client, userdata, msg):
     except json.JSONDecodeError as e:
         print(f"Invalid JSON received: {e}")
     except FileNotFoundError:
-        print(f"File '{file_name}' not found.")
+        print(f"File '{file_path}' not found.")
     except Exception as e:
         print(f"Error handling message: {e}")
 
