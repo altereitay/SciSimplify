@@ -160,15 +160,16 @@ def on_message(client, userdata, msg):
             print(simplfied_obj)
             save_simplified_text(res_path, simplfied_obj["simplified_text"])
             print("Done simplifying... ")
+            client.publish(TOPIC_GO, payload=None, qos=0, retain=True)
 
             client.publish(TOPIC_GO, payload=json.dumps({
-                'hash': payload.get("hash") ,
+                'hash': payload.get("hash"),
                 'name': res_path,
                 'status' : "done"
             }),
             retain=True,
-            qos=1)
-            print('Saved')
+            qos=2)
+
             client.publish(TOPIC_TERMS, payload=json.dumps({
                 'hash': payload.get("hash"),
                 'name': res_path,
@@ -177,7 +178,7 @@ def on_message(client, userdata, msg):
                 "status" : "new"
             }),
             retain=True,
-            qos=1)
+            qos=2)
 
     except json.JSONDecodeError as e:
         print(f"Invalid JSON received: {e}")
