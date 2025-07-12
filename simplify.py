@@ -4,7 +4,7 @@ from datetime import datetime
 from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
 import json
 import paho.mqtt.client as mqtt
-client = mqtt.Client() # Create MQTT client instance
+client = mqtt.Client(client_id='simplify', clean_session=False) # Create MQTT client instance
 
 TOPIC_GO = "articles/simplified"
 TOPIC_TERMS = "articles/terms"
@@ -160,14 +160,12 @@ def on_message(client, userdata, msg):
             print(simplfied_obj)
             save_simplified_text(res_path, simplfied_obj["simplified_text"])
             print("Done simplifying... ")
-            client.publish(TOPIC_GO, payload=None, qos=0, retain=True)
 
             client.publish(TOPIC_GO, payload=json.dumps({
                 'hash': payload.get("hash"),
                 'name': res_path,
                 'status' : "done"
             }),
-            retain=True,
             qos=2)
 
             client.publish(TOPIC_TERMS, payload=json.dumps({
@@ -177,7 +175,6 @@ def on_message(client, userdata, msg):
                 "category" : simplfied_obj["category"],
                 "status" : "new"
             }),
-            retain=True,
             qos=2)
 
     except json.JSONDecodeError as e:
